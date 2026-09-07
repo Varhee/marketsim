@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MarketSim — Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0c12;
+    --panel:#10141d;
+    --panel-2:#141926;
+    --panel-3:#0d111a;
+    --line:#232a3a;
+    --line-soft:#1a2030;
+    --text:#dbe1ee;
+    --dim:#6b7488;
+    --dim-2:#4b5266;
+    --amber:#e0a63a;
+    --amber-dim:#8a6a2c;
+    --up:#2fbf71;
+    --down:#e5484d;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:13.5px;
+  }
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+
+  .shell{display:grid; grid-template-columns:190px 1fr; min-height:100vh;}
+
+  nav.sidebar{
+    background:var(--panel-3); border-right:1px solid var(--line);
+    display:flex; flex-direction:column; padding:0;
+  }
+  .logo{
+    padding:18px 16px 14px 16px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:9px;
+  }
+  .logo .dot{width:7px; height:7px; border-radius:50%; background:var(--up); box-shadow:0 0 8px var(--up); animation:pulse 1.6s infinite; flex-shrink:0;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
+  .logo-text h1{font-size:13px; letter-spacing:.13em; margin:0; font-weight:800;}
+  .logo-text .ver{color:var(--dim-2); font-size:9.5px; font-family:var(--mono); margin-top:1px;}
+
+  .navlist{padding:10px 8px; flex:1;}
+  .navgroup-label{color:var(--dim-2); font-size:9.5px; text-transform:uppercase; letter-spacing:.1em; padding:10px 8px 5px 8px;}
+  .navitem{
+    display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:5px;
+    color:var(--dim); cursor:pointer; font-size:12.5px; font-weight:500; margin-bottom:1px;
+    border:1px solid transparent;
+  }
+  .navitem:hover{color:var(--text); background:var(--panel-2);}
+  .navitem.active{color:var(--amber); background:var(--panel-2); border-color:var(--line);}
+  .navitem .ic{width:15px; text-align:center; opacity:.85; font-size:12px;}
+  .navitem .badge{
+    margin-left:auto; font-family:var(--mono); font-size:9px; color:var(--dim-2);
+    background:var(--panel); padding:1px 5px; border-radius:3px; border:1px solid var(--line);
+  }
+
+  .sidebar-foot{
+    padding:12px 14px; border-top:1px solid var(--line); font-family:var(--mono);
+    font-size:9.5px; color:var(--dim-2); line-height:1.6;
+  }
+  .sidebar-foot .conn{display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  .conn-dot{width:6px; height:6px; border-radius:50%; background:var(--dim-2);}
+  .conn-dot.live{background:var(--up); box-shadow:0 0 5px var(--up);}
+
+  .main{display:flex; flex-direction:column; min-width:0;}
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 22px; border-bottom:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  header .titlewrap h2{margin:0; font-size:15px; font-weight:700; letter-spacing:.01em;}
+  header .titlewrap .sub{color:var(--dim); font-size:11px; font-family:var(--mono); margin-top:2px;}
+  .header-mid{flex:1; display:flex; justify-content:center;}
+  .regime-pill{
+    display:flex; align-items:center; gap:7px; padding:5px 12px; border-radius:20px;
+    background:var(--panel-3); border:1px solid var(--line); font-family:var(--mono);
+    font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--dim);
+  }
+  .regime-dot{width:6px; height:6px; border-radius:50%; background:var(--dim-2);}
+  .regime-pill.calm .regime-dot{background:var(--up); box-shadow:0 0 5px var(--up);}
+  .regime-pill.elevated .regime-dot{background:var(--amber); box-shadow:0 0 5px var(--amber);}
+  .regime-pill.stressed .regime-dot{background:var(--down); box-shadow:0 0 5px var(--down);}
+  .regime-pill.calm{color:var(--up);} .regime-pill.elevated{color:var(--amber);} .regime-pill.stressed{color:var(--down);}
+  .controls{display:flex; gap:8px; align-items:center;}
+  button{
+    background:var(--panel-3); color:var(--text); border:1px solid var(--line);
+    padding:7px 12px; border-radius:4px; font-family:var(--mono); font-size:11.5px;
+    cursor:pointer; letter-spacing:.02em; transition:border-color .15s, color .15s;
+  }
+  button:hover{border-color:var(--amber); color:var(--amber);}
+  button.danger:hover{border-color:var(--down); color:var(--down);}
+  button.primary{border-color:var(--amber-dim); color:var(--amber);}
+  select{
+    background:var(--panel-3); color:var(--text); border:1px solid var(--line);
+    padding:6px 8px; border-radius:4px; font-family:var(--mono); font-size:11.5px;
+  }
+
+  .metrics{
+    display:grid; grid-template-columns:repeat(8,1fr); gap:1px;
+    background:var(--line); border-bottom:1px solid var(--line);
+  }
+  .metric{background:var(--panel); padding:9px 14px;}
+  .metric .label{color:var(--dim); font-size:9.5px; text-transform:uppercase; letter-spacing:.07em;}
+  .metric .value{font-family:var(--mono); font-size:16px; font-weight:600; margin-top:3px;}
+  .up{color:var(--up);} .down{color:var(--down);} .amber{color:var(--amber);}
+
+  .view{display:none; flex:1; min-height:0;}
+  .view.active{display:flex; flex-direction:column;}
+
+  .market-grid{
+    display:grid; grid-template-columns:230px 1fr 280px; gap:1px;
+    background:var(--line); flex:1; min-height:520px;
+  }
+  .panel{background:var(--panel); padding:14px; overflow:auto;}
+  .panel h3{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:var(--dim);
+    margin:0 0 11px 0; font-weight:600; display:flex; align-items:center; justify-content:space-between;
+  }
+  .panel h3 .count{color:var(--dim-2); font-weight:400; text-transform:none; letter-spacing:0;}
+
+  .book-row{display:flex; justify-content:space-between; font-family:var(--mono); font-size:12px; padding:2.5px 0;}
+  .book-row .p{font-weight:600;}
+  .book-bar{height:3px; border-radius:2px; margin-top:1px; margin-bottom:2px;}
+  .ask-row .p{color:var(--down);}
+  .bid-row .p{color:var(--up);}
+  .mid-line{
+    display:flex; justify-content:space-between; padding:7px 0; margin:5px 0;
+    border-top:1px dashed var(--line); border-bottom:1px dashed var(--line);
+    font-family:var(--mono); font-size:11.5px; color:var(--dim);
+  }
+
+  #chart{width:100%; height:280px; display:block;}
+  .chart-footer{
+    display:flex; justify-content:space-between; margin-top:8px; font-family:var(--mono);
+    font-size:10.5px; color:var(--dim-2); border-top:1px solid var(--line-soft); padding-top:8px;
+  }
+
+  .feed-item{
+    font-family:var(--mono); font-size:11px; padding:4.5px 0;
+    border-bottom:1px solid var(--line-soft); display:flex; justify-content:space-between; gap:6px;
+  }
+  .feed-item .side-buy{color:var(--up);}
+  .feed-item .side-sell{color:var(--down);}
+
+  .agents{margin-top:14px;}
+  .agent-row{
+    display:grid; grid-template-columns:1fr auto auto; gap:8px; font-family:var(--mono);
+    font-size:10.5px; padding:3px 0; color:var(--dim); align-items:center;
+  }
+  .agent-row .name{color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  .risk-layout{display:grid; grid-template-columns:1.4fr 1fr; gap:1px; background:var(--line); flex:1;}
+  .stat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px;}
+  .stat-box{background:var(--panel-3); border:1px solid var(--line-soft); border-radius:6px; padding:12px;}
+  .stat-box .label{color:var(--dim); font-size:10px; text-transform:uppercase; letter-spacing:.06em;}
+  .stat-box .value{font-family:var(--mono); font-size:20px; font-weight:700; margin-top:5px;}
+  table.pnl{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11.5px;}
+  table.pnl th{
+    text-align:left; color:var(--dim); font-weight:500; font-size:10px; text-transform:uppercase;
+    letter-spacing:.05em; padding:6px 8px; border-bottom:1px solid var(--line);
+  }
+  table.pnl td{padding:7px 8px; border-bottom:1px solid var(--line-soft);}
+  table.pnl tr:hover td{background:var(--panel-2);}
+  .type-tag{
+    font-size:9.5px; padding:2px 6px; border-radius:3px; background:var(--panel-2);
+    border:1px solid var(--line); color:var(--dim); white-space:nowrap;
+  }
+  #volChart{width:100%; height:150px; display:block; margin-top:6px;}
+
+  .scenario-wrap{padding:20px 24px; overflow:auto; flex:1;}
+  .scenario-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px;}
+  .scenario-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:16px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .scenario-card .icon{font-size:20px;}
+  .scenario-card h4{margin:0; font-size:13.5px;}
+  .scenario-card p{margin:0; color:var(--dim); font-size:11.5px; line-height:1.5; flex:1;}
+  .scenario-card button{align-self:flex-start;}
+  .log-title{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin:0 0 10px 0;}
+  .log-table{width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11.5px;}
+  .log-table th{text-align:left; color:var(--dim); font-weight:500; font-size:10px; text-transform:uppercase; padding:6px 10px; border-bottom:1px solid var(--line);}
+  .log-table td{padding:7px 10px; border-bottom:1px solid var(--line-soft);}
+  .pending{color:var(--dim-2); font-style:italic;}
+  .empty-note{color:var(--dim-2); font-family:var(--mono); font-size:11.5px; padding:20px 0;}
+
+  /* ---------- strategies view ---------- */
+  .strategies-layout{display:grid; grid-template-columns:290px 1fr; gap:1px; background:var(--line); flex:1;}
+  .strategy-tabs{display:flex; gap:6px; margin-bottom:14px;}
+  .strategy-tab{
+    flex:1; text-align:center; padding:8px; border-radius:5px; cursor:pointer;
+    background:var(--panel-3); border:1px solid var(--line); color:var(--dim); font-size:11.5px; font-weight:600;
+  }
+  .strategy-tab.active{color:var(--amber); border-color:var(--amber-dim); background:var(--panel-2);}
+  .param-row{margin-bottom:12px;}
+  .param-row label{
+    display:flex; justify-content:space-between; font-size:11px; color:var(--dim);
+    margin-bottom:5px; font-family:var(--mono);
+  }
+  .param-row input[type=range]{width:100%; accent-color:var(--amber);}
+  .param-row .val{color:var(--amber);}
+  .backtest-btn{width:100%; padding:10px; margin-top:8px; font-size:12.5px;}
+  .results-empty{
+    color:var(--dim-2); font-family:var(--mono); font-size:12px; padding:60px 20px;
+    text-align:center; border:1px dashed var(--line); border-radius:8px; margin:20px;
+  }
+  .metric-strip{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); margin:0 20px 16px 20px; border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .metric-strip .cell{background:var(--panel-3); padding:10px 12px; text-align:center;}
+  .metric-strip .cell .l{font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em;}
+  .metric-strip .cell .v{font-family:var(--mono); font-size:16px; font-weight:700; margin-top:4px;}
+  .warning-box{
+    margin:0 20px 16px 20px; padding:10px 12px; background:rgba(224,166,58,0.08);
+    border:1px solid var(--amber-dim); border-radius:6px; font-family:var(--mono); font-size:11px; color:#d8ba7e;
+  }
+  .warning-box .wtitle{color:var(--amber); font-weight:700; margin-bottom:6px; text-transform:uppercase; font-size:10px; letter-spacing:.05em;}
+  .warning-box ul{margin:0; padding-left:16px;}
+  .warning-box li{margin-bottom:4px; line-height:1.4;}
+  #equityChart{width:100%; height:230px; display:block; margin:0 20px; width:calc(100% - 40px);}
+  .legend-row{display:flex; gap:16px; margin:8px 20px 0 20px; font-family:var(--mono); font-size:10.5px; color:var(--dim);}
+  .legend-swatch{display:inline-block; width:10px; height:2px; margin-right:5px; vertical-align:middle;}
+
+  /* ---------- research lab view ---------- */
+  .research-layout{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); flex:1;}
+  #histChart, #acfChart{width:100%; height:170px; display:block;}
+  .lab-stat-row{display:flex; justify-content:space-between; font-family:var(--mono); font-size:11.5px; padding:5px 0; border-bottom:1px solid var(--line-soft); color:var(--dim);}
+  .lab-stat-row span:last-child{color:var(--text);}
+  .verdict-box{
+    background:var(--panel-3); border:1px solid var(--line-soft); border-radius:6px; padding:12px; margin-top:10px;
+    font-family:var(--mono); font-size:11.5px; color:var(--dim);
+  }
+  .verdict-box .verdict-title{color:var(--text); font-weight:600; margin-bottom:6px;}
+  .refresh-row{display:flex; justify-content:flex-end; margin-bottom:10px;}
+
+  .learn-wrap{padding:24px 28px; overflow:auto; flex:1; max-width:760px;}
+  .learn-block{margin-bottom:26px;}
+  .learn-block h3{font-size:14.5px; margin:0 0 8px 0; display:flex; align-items:center; gap:8px;}
+  .learn-block h3 .num{color:var(--amber); font-family:var(--mono); font-size:12px;}
+  .learn-block p{color:#b8c0d4; line-height:1.65; margin:0 0 10px 0; font-size:13px;}
+  .mini-book{
+    display:flex; gap:16px; background:var(--panel-3); border:1px solid var(--line-soft);
+    border-radius:6px; padding:14px; font-family:var(--mono); font-size:12px; margin:10px 0;
+  }
+  .mini-col{flex:1;}
+  .mini-col .head{color:var(--dim); font-size:9.5px; text-transform:uppercase; margin-bottom:6px;}
+  .mini-row{display:flex; justify-content:space-between; padding:3px 0; cursor:pointer; border-radius:3px; padding-left:4px;}
+  .mini-row:hover{background:var(--panel-2);}
+  .mini-note{color:var(--dim-2); font-size:11px; margin-top:8px; font-style:italic;}
+  .bias-list{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;}
+  .bias-list li{
+    font-family:var(--mono); font-size:11.5px; color:var(--dim); padding:8px 10px;
+    background:var(--panel-3); border:1px solid var(--line-soft); border-radius:5px;
+    border-left:2px solid var(--amber-dim);
+  }
+
+  footer{
+    padding:8px 20px; border-top:1px solid var(--line); color:var(--dim-2);
+    font-family:var(--mono); font-size:10px; letter-spacing:.02em;
+  }
+
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr;}
+    nav.sidebar{display:none;}
+    .market-grid, .risk-layout{grid-template-columns:1fr;}
+    .metrics{grid-template-columns:repeat(4,1fr);}
+    .scenario-cards{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="dot"></div>
+      <div class="logo-text">
+        <h1>MARKETSIM</h1>
+        <div class="ver">build 0.3 · dev</div>
+      </div>
+    </div>
+    <div class="navlist">
+      <div class="navgroup-label">Trading</div>
+      <div class="navitem active" data-view="market"><span class="ic">▤</span> Market</div>
+      <div class="navitem" data-view="risk"><span class="ic">◈</span> Portfolio &amp; Risk</div>
+      <div class="navitem" data-view="scenarios"><span class="ic">⚠</span> Scenarios</div>
+      <div class="navgroup-label">Reference</div>
+      <div class="navitem" data-view="research"><span class="ic">▥</span> Research Lab</div>
+      <div class="navitem" data-view="strategies"><span class="ic">▦</span> Strategies</div>
+      <div class="navitem" data-view="learn"><span class="ic">▧</span> Learn</div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="conn"><span class="conn-dot" id="connDot"></span><span id="connText">connecting…</span></div>
+      symbol: SIM<br>engine: price-time priority
+    </div>
+  </nav>
+
+  <div class="main">
+    <header>
+      <div class="titlewrap">
+        <h2 id="pageTitle">Live Market</h2>
+        <div class="sub" id="statusline">TICK — · CONNECTING…</div>
+      </div>
+      <div class="header-mid">
+        <div class="regime-pill" id="regimePill" style="display:none;"><span class="regime-dot"></span><span id="regimeText">—</span></div>
+      </div>
+      <div class="controls" id="marketControls">
+        <select id="scenarioSelect">
+          <option value="flash_crash">Flash crash</option>
+          <option value="liquidity_crisis">Liquidity crisis</option>
+          <option value="volatility_spike">Volatility spike</option>
+        </select>
+        <button id="runScenario" class="primary">⚠ Run scenario</button>
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn" class="danger">Reset</button>
+      </div>
+    </header>
+
+    <div class="metrics">
+      <div class="metric"><div class="label">Last price</div><div class="value" id="mLast">—</div></div>
+      <div class="metric"><div class="label">Best bid</div><div class="value up" id="mBid">—</div></div>
+      <div class="metric"><div class="label">Best ask</div><div class="value down" id="mAsk">—</div></div>
+      <div class="metric"><div class="label">Spread</div><div class="value" id="mSpread">—</div></div>
+      <div class="metric"><div class="label">Volatility</div><div class="value amber" id="mVol">—</div></div>
+      <div class="metric"><div class="label">Liquidity</div><div class="value" id="mLiq">—</div></div>
+      <div class="metric"><div class="label">Trades</div><div class="value" id="mTrades">—</div></div>
+      <div class="metric"><div class="label">Volume</div><div class="value" id="mVolume">—</div></div>
+    </div>
+
+    <div class="view active" id="view-market">
+      <div class="market-grid">
+        <div class="panel" id="bookPanel">
+          <h3>Order book</h3>
+          <div id="asks"></div>
+          <div class="mid-line"><span>MID</span><span id="midVal">—</span></div>
+          <div id="bids"></div>
+          <div class="agents">
+            <h3>Agents <span class="count" id="agentCount"></span></h3>
+            <div id="agentList"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Live price</h3>
+          <canvas id="chart" width="900" height="330"></canvas>
+          <div class="chart-footer">
+            <span id="chartRange">—</span>
+            <span id="chartTrend">—</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Trade feed <span class="count">last 15</span></h3>
+          <div id="feed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-risk">
+      <div class="risk-layout">
+        <div class="panel">
+          <h3>Agent P&amp;L</h3>
+          <table class="pnl">
+            <thead><tr><th>Agent</th><th>Type</th><th style="text-align:right">Position</th><th style="text-align:right">Unrealised P&amp;L</th></tr></thead>
+            <tbody id="pnlTable"></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Market stats</h3>
+          <div class="stat-grid">
+            <div class="stat-box"><div class="label">Total trades</div><div class="value" id="rTrades">—</div></div>
+            <div class="stat-box"><div class="label">Total volume</div><div class="value" id="rVolume">—</div></div>
+            <div class="stat-box"><div class="label">Current spread</div><div class="value" id="rSpread">—</div></div>
+            <div class="stat-box"><div class="label">Liquidity score</div><div class="value" id="rLiq">—</div></div>
+          </div>
+          <h3>Realised volatility (rolling)</h3>
+          <canvas id="volChart" width="500" height="150"></canvas>
+          <p style="color:var(--dim-2); font-family:var(--mono); font-size:10.5px; margin-top:8px;">
+            30-tick pstdev of returns, annualised as a toy scaling factor — not a calibrated risk model.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-scenarios">
+      <div class="scenario-wrap">
+        <div class="scenario-cards">
+          <div class="scenario-card">
+            <div class="icon">🐋</div>
+            <h4>Institutional liquidation</h4>
+            <p>The institutional agent sells 3,000 shares in six chunks over the next few ticks. Watch how far it pushes the price and how quickly the book refills.</p>
+            <button data-scenario="flash_crash">⚠ Run</button>
+          </div>
+          <div class="scenario-card">
+            <div class="icon">🌊</div>
+            <h4>Liquidity crisis</h4>
+            <p>Every market maker's inventory limit collapses to almost nothing, forcing them to pull their quotes. Spreads should widen fast as they step back.</p>
+            <button data-scenario="liquidity_crisis">⚠ Run</button>
+          </div>
+          <div class="scenario-card">
+            <div class="icon">⚡</div>
+            <h4>Volatility spike</h4>
+            <p>Noise trader activity triples. More random flow hitting the book at once, without any change in the "true" direction of the market.</p>
+            <button data-scenario="volatility_spike">⚠ Run</button>
+          </div>
+        </div>
+
+        <h3 class="log-title">Scenario log</h3>
+        <table class="log-table">
+          <thead><tr><th>Scenario</th><th>Tick</th><th>Price before</th><th>Price after (+40 ticks)</th><th>Move</th></tr></thead>
+          <tbody id="scenarioLog"></tbody>
+        </table>
+        <div class="empty-note" id="logEmptyNote">No scenarios run yet this session — trigger one above and it'll show up here once the market's had time to react.</div>
+      </div>
+    </div>
+
+    <div class="view" id="view-strategies">
+      <div class="strategies-layout">
+        <div class="panel">
+          <h3>Configure backtest</h3>
+          <div class="strategy-tabs">
+            <div class="strategy-tab active" data-strategy="momentum">Momentum</div>
+            <div class="strategy-tab" data-strategy="mean_reversion">Mean Reversion</div>
+          </div>
+
+          <div id="paramsMomentum">
+            <div class="param-row">
+              <label>Lookback period <span class="val" id="valLookback">10</span></label>
+              <input type="range" id="pLookback" min="5" max="60" value="10">
+            </div>
+            <div class="param-row">
+              <label>Entry threshold <span class="val" id="valEntryThresh">1.0%</span></label>
+              <input type="range" id="pEntryThresh" min="2" max="50" value="10">
+            </div>
+          </div>
+          <div id="paramsMeanRev" style="display:none;">
+            <div class="param-row">
+              <label>Rolling window <span class="val" id="valWindow">30</span></label>
+              <input type="range" id="pWindow" min="10" max="80" value="30">
+            </div>
+            <div class="param-row">
+              <label>Z-score threshold <span class="val" id="valZ">1.5</span></label>
+              <input type="range" id="pZ" min="5" max="30" value="15">
+            </div>
+          </div>
+
+          <div class="param-row">
+            <label>Position size <span class="val" id="valPosSize">10%</span></label>
+            <input type="range" id="pPosSize" min="2" max="50" value="10">
+          </div>
+          <div class="param-row">
+            <label>Stop loss <span class="val" id="valStop">5%</span></label>
+            <input type="range" id="pStop" min="1" max="20" value="5">
+          </div>
+          <div class="param-row">
+            <label>Transaction cost <span class="val" id="valCost">5 bps</span></label>
+            <input type="range" id="pCost" min="0" max="30" value="5">
+          </div>
+
+          <button class="backtest-btn primary" id="runBacktest">▶ Run backtest</button>
+          <p style="color:var(--dim-2); font-family:var(--mono); font-size:10px; margin-top:10px; line-height:1.5;">
+            Runs against this session's actual simulated price history — not synthetic data. Reset the market for a fresh path.
+          </p>
+        </div>
+
+        <div class="panel" id="backtestResultsPanel">
+          <div class="results-empty" id="backtestEmpty">Configure parameters and run a backtest to see performance here.</div>
+          <div id="backtestResults" style="display:none;">
+            <div class="metric-strip">
+              <div class="cell"><div class="l">Total return</div><div class="v" id="brReturn">—</div></div>
+              <div class="cell"><div class="l">Sharpe</div><div class="v" id="brSharpe">—</div></div>
+              <div class="cell"><div class="l">Max drawdown</div><div class="v" id="brDrawdown">—</div></div>
+              <div class="cell"><div class="l">Win rate</div><div class="v" id="brWinrate">—</div></div>
+              <div class="cell"><div class="l">Trades</div><div class="v" id="brTrades">—</div></div>
+            </div>
+            <canvas id="equityChart" width="700" height="230"></canvas>
+            <div class="legend-row">
+              <span><span class="legend-swatch" style="background:var(--amber)"></span>Strategy</span>
+              <span><span class="legend-swatch" style="background:var(--dim)"></span>Buy &amp; hold</span>
+              <span id="brCosts" style="margin-left:auto;"></span>
+            </div>
+            <div class="warning-box" style="margin-top:16px;" id="brWarnings">
+              <div class="wtitle">⚠ Bias detector</div>
+              <ul id="brWarningList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-research">
+      <div class="research-layout">
+        <div class="panel">
+          <div class="refresh-row"><button id="refreshResearch">↻ Refresh analysis</button></div>
+          <h3>Returns distribution</h3>
+          <canvas id="histChart" width="450" height="170"></canvas>
+          <div class="lab-stat-row"><span>Mean return / tick</span><span id="rsMean">—</span></div>
+          <div class="lab-stat-row"><span>Std dev</span><span id="rsStd">—</span></div>
+          <div class="lab-stat-row"><span>Shape</span><span id="rsSkew">—</span></div>
+          <div class="lab-stat-row"><span>Sample size</span><span id="rsSample">—</span></div>
+        </div>
+        <div class="panel">
+          <h3>Autocorrelation of returns</h3>
+          <canvas id="acfChart" width="450" height="170"></canvas>
+          <p style="color:var(--dim-2); font-family:var(--mono); font-size:10.5px; margin-top:6px;">
+            Non-zero lag-1 autocorrelation here is a real signature of this market's agent mix (mean-reversion and market-maker bounce), not measurement noise.
+          </p>
+
+          <h3 style="margin-top:20px;">Consistency check</h3>
+          <div class="verdict-box" id="stabilityBox">
+            <div class="verdict-title" id="stabilityVerdict">—</div>
+            <div id="stabilityDetail"></div>
+          </div>
+          <p style="color:var(--dim-2); font-family:var(--mono); font-size:10px; margin-top:8px; line-height:1.5;">
+            A simple first-half vs second-half comparison of return mean/variance — a heuristic, not a proper stationarity test (e.g. Augmented Dickey-Fuller).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-learn">
+      <div class="learn-wrap">
+        <div class="learn-block">
+          <h3><span class="num">01</span> What actually is an order book?</h3>
+          <p>It's two queues. People who want to buy stack up on one side, people who want to sell stack up on the other, sorted best price first. Nothing matches until someone's price crosses the other side's price. Try it: click a resting order below to see who it'd trade against.</p>
+          <div class="mini-book" id="miniBook">
+            <div class="mini-col">
+              <div class="head">Asks (sell)</div>
+              <div id="miniAsks"></div>
+            </div>
+            <div class="mini-col">
+              <div class="head">Bids (buy)</div>
+              <div id="miniBids"></div>
+            </div>
+          </div>
+          <div class="mini-note" id="miniNote">This mirrors whatever the live book looks like right now — go back to the Market tab and it's the same book.</div>
+        </div>
+
+        <div class="learn-block">
+          <h3><span class="num">02</span> Why market makers matter more than they look like they should</h3>
+          <p>A market maker just quotes a price a few pence either side of "fair" and profits from the gap. That sounds passive, but they're the reason a big sell order can actually execute at all — without someone resting a bid, there's nothing for a seller to sell into. That also means they're the reason a shock can move price so fast: they're absorbing the trade, and their own risk limits are what eventually stop them.</p>
+        </div>
+
+        <div class="learn-block">
+          <h3><span class="num">03</span> Why backtesting is easy to get wrong</h3>
+          <p>The gap between "my strategy returned 400%" and "my strategy returned 8%" is usually not the strategy — it's a mistake in how it was tested. A few of the most common ones:</p>
+          <ul class="bias-list">
+            <li>Look-ahead bias — using information that wouldn't have existed yet at that point in history.</li>
+            <li>No out-of-sample data — tuning parameters on the same period you're testing them on.</li>
+            <li>Ignoring transaction costs — spread and slippage eat into returns that look great on paper.</li>
+            <li>Overfitting — a strategy with enough tunable parameters can fit noise, not signal.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  MarketSim is a simulated market for educational and demonstration purposes only. Nothing here is trading advice.
+</footer>
+
+<script>
+const WS_URL = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws";
+
+let priceHistory = [];
+let volHistory = [];
+let latestState = null;
+
+function fmt(n, d=2){ return (n === null || n === undefined) ? "—" : Number(n).toFixed(d); }
+
+function connect(){
+  const ws = new WebSocket(WS_URL);
+  ws.onopen = () => { document.getElementById("connDot").classList.add("live"); document.getElementById("connText").textContent = "live feed"; };
+  ws.onmessage = (ev) => render(JSON.parse(ev.data));
+  ws.onclose = () => {
+    document.getElementById("connDot").classList.remove("live");
+    document.getElementById("connText").textContent = "reconnecting…";
+    setTimeout(connect, 1500);
+  };
+  ws.onerror = () => ws.close();
+}
+
+document.querySelectorAll(".navitem[data-view]").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".navitem[data-view]").forEach(n => n.classList.remove("active"));
+    item.classList.add("active");
+    const view = item.dataset.view;
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.getElementById("view-" + view).classList.add("active");
+
+    const titles = { market: "Live Market", risk: "Portfolio & Risk", scenarios: "Scenarios", strategies: "Strategies", research: "Research Lab", learn: "Learn" };
+    document.getElementById("pageTitle").textContent = titles[view];
+    document.getElementById("marketControls").style.display = (view === "market") ? "flex" : "none";
+
+    if (view === "risk" && latestState) drawVolChart();
+    if (view === "learn" && latestState) renderMiniBook();
+    if (view === "research") loadResearch();
+  });
+});
+
+function render(s){
+  latestState = s;
+  document.getElementById("statusline").textContent =
+    `TICK ${s.tick} · ${s.running ? "LIVE" : "PAUSED"} · SPEED ${s.speed}x`;
+  document.getElementById("mLast").textContent = fmt(s.price);
+  document.getElementById("mBid").textContent = fmt(s.best_bid);
+  document.getElementById("mAsk").textContent = fmt(s.best_ask);
+  document.getElementById("mSpread").textContent = s.spread !== null ? fmt(s.spread) : "—";
+  document.getElementById("mVol").textContent = fmt(s.volatility, 4);
+  document.getElementById("mLiq").textContent = Math.round(s.liquidity_score).toLocaleString();
+  document.getElementById("mTrades").textContent = s.total_trades.toLocaleString();
+  document.getElementById("mVolume").textContent = s.total_volume.toLocaleString();
+  document.getElementById("midVal").textContent = fmt((s.best_bid && s.best_ask) ? (s.best_bid+s.best_ask)/2 : s.price);
+  document.getElementById("pauseBtn").textContent = s.running ? "Pause" : "Resume";
+
+  renderBook(s);
+  renderFeed(s);
+  renderAgentsMini(s);
+  renderRiskView(s);
+  renderScenarioLog(s);
+  updateRegimePill(s);
+
+  priceHistory = s.price_history;
+  volHistory = s.volatility_history;
+  drawChart();
+  if (document.getElementById("view-risk").classList.contains("active")) drawVolChart();
+  if (document.getElementById("view-learn").classList.contains("active")) renderMiniBook();
+}
+
+// ---------- market regime pill (client-side heuristic, mirrors research.py) ----------
+function updateRegimePill(s){
+  const pill = document.getElementById("regimePill");
+  const sample = (s.volatility_history || []).filter(v => v > 0).slice(-200);
+  if (sample.length < 10){ pill.style.display = "none"; return; }
+  const sorted = [...sample].sort((a,b)=>a-b);
+  const current = s.volatility;
+  const rank = sorted.filter(v => v <= current).length;
+  const pct = rank / sorted.length * 100;
+  let label, cls;
+  if (pct < 50){ label = "Calm"; cls = "calm"; }
+  else if (pct < 85){ label = "Elevated"; cls = "elevated"; }
+  else { label = "Stressed"; cls = "stressed"; }
+  pill.style.display = "flex";
+  pill.className = "regime-pill " + cls;
+  document.getElementById("regimeText").textContent = `${label} · ${pct.toFixed(0)}th pct`;
+}
+
+function renderBook(s){
+  const maxQty = Math.max(1, ...s.depth.bids.map(l=>l.quantity), ...s.depth.asks.map(l=>l.quantity));
+  const asksHtml = [...s.depth.asks].reverse().map(l => `
+    <div class="book-row ask-row"><span class="p">${fmt(l.price)}</span><span>${l.quantity}</span></div>
+    <div class="book-bar" style="width:${(l.quantity/maxQty*100).toFixed(0)}%; background:var(--down); opacity:.35;"></div>
+  `).join("");
+  const bidsHtml = s.depth.bids.map(l => `
+    <div class="book-row bid-row"><span class="p">${fmt(l.price)}</span><span>${l.quantity}</span></div>
+    <div class="book-bar" style="width:${(l.quantity/maxQty*100).toFixed(0)}%; background:var(--up); opacity:.35;"></div>
+  `).join("");
+  document.getElementById("asks").innerHTML = asksHtml || `<div style="color:var(--dim); font-family:var(--mono); font-size:12px;">no asks resting</div>`;
+  document.getElementById("bids").innerHTML = bidsHtml || `<div style="color:var(--dim); font-family:var(--mono); font-size:12px;">no bids resting</div>`;
+}
+
+function renderFeed(s){
+  document.getElementById("feed").innerHTML = s.trades.map(t => `
+    <div class="feed-item">
+      <span class="${t.aggressor === 'BUY' ? 'side-buy' : 'side-sell'}">${t.aggressor === 'BUY' ? '▲' : '▼'} ${t.quantity}</span>
+      <span>${fmt(t.price)}</span>
+      <span style="color:var(--dim)">${t.aggressor === 'BUY' ? t.buyer : t.seller}</span>
+    </div>
+  `).join("") || `<div style="color:var(--dim); font-family:var(--mono); font-size:12px;">waiting for trades…</div>`;
+}
+
+function renderAgentsMini(s){
+  document.getElementById("agentCount").textContent = s.agents.length;
+  document.getElementById("agentList").innerHTML = s.agents.map(a => `
+    <div class="agent-row">
+      <span class="name">${a.id}</span>
+      <span class="${a.position>=0?'up':'down'}">${a.position >= 0 ? '+' : ''}${a.position}</span>
+      <span class="${a.pnl>=0?'up':'down'}">${a.pnl >= 0 ? '+' : ''}${Math.round(a.pnl).toLocaleString()}</span>
+    </div>
+  `).join("");
+}
+
+function renderRiskView(s){
+  document.getElementById("rTrades").textContent = s.total_trades.toLocaleString();
+  document.getElementById("rVolume").textContent = s.total_volume.toLocaleString();
+  document.getElementById("rSpread").textContent = s.spread !== null ? fmt(s.spread) : "—";
+  document.getElementById("rLiq").textContent = Math.round(s.liquidity_score).toLocaleString();
+
+  const rows = [...s.agents].sort((a,b) => b.pnl - a.pnl).map(a => `
+    <tr>
+      <td>${a.id}</td>
+      <td><span class="type-tag">${a.type}</span></td>
+      <td style="text-align:right">${a.position >= 0 ? '+' : ''}${a.position}</td>
+      <td style="text-align:right" class="${a.pnl>=0?'up':'down'}">${a.pnl >= 0 ? '+' : ''}£${Math.round(a.pnl).toLocaleString()}</td>
+    </tr>
+  `).join("");
+  document.getElementById("pnlTable").innerHTML = rows;
+}
+
+function renderScenarioLog(s){
+  const log = s.scenario_log || [];
+  document.getElementById("logEmptyNote").style.display = log.length ? "none" : "block";
+  document.getElementById("scenarioLog").innerHTML = log.map(e => {
+    const label = ({flash_crash:"Institutional liquidation", liquidity_crisis:"Liquidity crisis", volatility_spike:"Volatility spike"})[e.kind] || e.kind;
+    if (!e.resolved){
+      return `<tr><td>${label}</td><td>${e.tick_triggered}</td><td>${fmt(e.price_before)}</td><td class="pending">resolving…</td><td class="pending">—</td></tr>`;
+    }
+    const cls = e.move_pct >= 0 ? "up" : "down";
+    return `<tr><td>${label}</td><td>${e.tick_triggered}</td><td>${fmt(e.price_before)}</td><td>${fmt(e.price_after)}</td><td class="${cls}">${e.move_pct >= 0 ? '+' : ''}${e.move_pct}%</td></tr>`;
+  }).join("");
+}
+
+function drawChart(){
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height, pad = 10;
+  ctx.clearRect(0,0,w,h);
+  if (priceHistory.length < 2) return;
+  const min = Math.min(...priceHistory), max = Math.max(...priceHistory);
+  const range = (max - min) || 1;
+
+  ctx.strokeStyle = "#1b2130"; ctx.lineWidth = 1;
+  for (let i=0;i<=4;i++){
+    const y = pad + (h-2*pad)*i/4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  const up = priceHistory[priceHistory.length-1] >= priceHistory[0];
+  ctx.strokeStyle = up ? "#2fbf71" : "#e5484d";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  priceHistory.forEach((p, i) => {
+    const x = pad + (w-2*pad) * (i/(priceHistory.length-1));
+    const y = h - pad - ((p-min)/range)*(h-2*pad);
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.lineTo(w-pad, h-pad); ctx.lineTo(pad, h-pad); ctx.closePath();
+  ctx.fillStyle = up ? "rgba(47,191,113,0.08)" : "rgba(229,72,77,0.08)";
+  ctx.fill();
+
+  document.getElementById("chartRange").textContent = `range ${fmt(min)} – ${fmt(max)}`;
+  document.getElementById("chartTrend").textContent = up ? "▲ up over window" : "▼ down over window";
+}
+
+function drawVolChart(){
+  const canvas = document.getElementById("volChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height, pad = 8;
+  ctx.clearRect(0,0,w,h);
+  if (volHistory.length < 2) return;
+  const max = Math.max(...volHistory, 0.0001);
+  ctx.fillStyle = "rgba(224,166,58,0.65)";
+  const barW = (w - 2*pad) / volHistory.length;
+  volHistory.forEach((v,i) => {
+    const bh = (v/max) * (h - 2*pad);
+    ctx.fillRect(pad + i*barW, h - pad - bh, Math.max(1, barW-1), bh);
+  });
+}
+
+function renderMiniBook(){
+  if (!latestState) return;
+  const depth = latestState.depth;
+  document.getElementById("miniAsks").innerHTML = [...depth.asks].reverse().slice(0,4).map(l =>
+    `<div class="mini-row" onclick="miniExplain('ask', ${l.price}, ${l.quantity})"><span style="color:var(--down)">${fmt(l.price)}</span><span>${l.quantity}</span></div>`
+  ).join("") || `<div style="color:var(--dim-2)">no asks</div>`;
+  document.getElementById("miniBids").innerHTML = depth.bids.slice(0,4).map(l =>
+    `<div class="mini-row" onclick="miniExplain('bid', ${l.price}, ${l.quantity})"><span style="color:var(--up)">${fmt(l.price)}</span><span>${l.quantity}</span></div>`
+  ).join("") || `<div style="color:var(--dim-2)">no bids</div>`;
+}
+function miniExplain(side, price, qty){
+  const note = document.getElementById("miniNote");
+  if (side === "ask"){
+    note.textContent = `This is someone offering to sell ${qty} shares at £${price.toFixed(2)}. A buyer would need to bid at least £${price.toFixed(2)} — or send a market order — to trade against it.`;
+  } else {
+    note.textContent = `This is someone offering to buy ${qty} shares at £${price.toFixed(2)}. A seller would need to offer at or below £${price.toFixed(2)} — or send a market order — to trade against it.`;
+  }
+}
+
+document.getElementById("pauseBtn").addEventListener("click", async () => {
+  const wantRunning = document.getElementById("pauseBtn").textContent === "Resume";
+  await fetch(`/api/control/${wantRunning ? "resume" : "pause"}`, {method:"POST"});
+});
+document.getElementById("resetBtn").addEventListener("click", async () => {
+  await fetch("/api/control/reset", {method:"POST"});
+});
+document.getElementById("runScenario").addEventListener("click", async () => {
+  const kind = document.getElementById("scenarioSelect").value;
+  await fetch(`/api/scenario/${kind}`, {method:"POST"});
+});
+document.querySelectorAll(".scenario-card button[data-scenario]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    await fetch(`/api/scenario/${btn.dataset.scenario}`, {method:"POST"});
+  });
+});
+
+// ---------- strategies view ----------
+let activeStrategy = "momentum";
+
+document.querySelectorAll(".strategy-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".strategy-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    activeStrategy = tab.dataset.strategy;
+    document.getElementById("paramsMomentum").style.display = activeStrategy === "momentum" ? "block" : "none";
+    document.getElementById("paramsMeanRev").style.display = activeStrategy === "mean_reversion" ? "block" : "none";
+  });
+});
+
+function bindSlider(sliderId, labelId, formatter){
+  const el = document.getElementById(sliderId);
+  const label = document.getElementById(labelId);
+  const update = () => label.textContent = formatter(el.value);
+  el.addEventListener("input", update);
+  update();
+}
+bindSlider("pLookback", "valLookback", v => v);
+bindSlider("pEntryThresh", "valEntryThresh", v => (v/10).toFixed(1) + "%");
+bindSlider("pWindow", "valWindow", v => v);
+bindSlider("pZ", "valZ", v => (v/10).toFixed(1));
+bindSlider("pPosSize", "valPosSize", v => v + "%");
+bindSlider("pStop", "valStop", v => v + "%");
+bindSlider("pCost", "valCost", v => v + " bps");
+
+let lastBacktest = null;
+
+document.getElementById("runBacktest").addEventListener("click", async () => {
+  const btn = document.getElementById("runBacktest");
+  btn.textContent = "Running…";
+  btn.disabled = true;
+
+  const params = new URLSearchParams({
+    strategy: activeStrategy,
+    lookback: document.getElementById("pLookback").value,
+    entry_threshold_pct: (document.getElementById("pEntryThresh").value / 1000).toString(),
+    window: document.getElementById("pWindow").value,
+    z_threshold: (document.getElementById("pZ").value / 10).toString(),
+    position_size_pct: (document.getElementById("pPosSize").value / 100).toString(),
+    stop_loss_pct: (document.getElementById("pStop").value / 100).toString(),
+    transaction_cost_bps: document.getElementById("pCost").value,
+  });
+
+  try {
+    const res = await fetch(`/api/strategy/backtest?${params.toString()}`, {method:"POST"});
+    const data = await res.json();
+    btn.textContent = "▶ Run backtest";
+    btn.disabled = false;
+    if (data.error){
+      document.getElementById("backtestEmpty").textContent = data.error;
+      document.getElementById("backtestEmpty").style.display = "block";
+      document.getElementById("backtestResults").style.display = "none";
+      return;
+    }
+    lastBacktest = data;
+    renderBacktest(data);
+  } catch (e) {
+    btn.textContent = "▶ Run backtest";
+    btn.disabled = false;
+  }
+});
+
+function renderBacktest(data){
+  document.getElementById("backtestEmpty").style.display = "none";
+  document.getElementById("backtestResults").style.display = "block";
+
+  const upR = data.total_return_pct >= 0;
+  const brReturn = document.getElementById("brReturn");
+  brReturn.textContent = (upR ? "+" : "") + data.total_return_pct + "%";
+  brReturn.className = "v " + (upR ? "up" : "down");
+  document.getElementById("brSharpe").textContent = data.sharpe_ratio;
+  document.getElementById("brDrawdown").textContent = data.max_drawdown_pct + "%";
+  document.getElementById("brWinrate").textContent = data.win_rate_pct + "%";
+  document.getElementById("brTrades").textContent = data.num_trades;
+  document.getElementById("brCosts").textContent = `Transaction costs: £${data.total_transaction_costs.toLocaleString()}`;
+
+  document.getElementById("brWarningList").innerHTML = data.warnings.map(w => `<li>${w}</li>`).join("");
+
+  drawEquityChart(data.equity_curve, data.buy_hold_curve);
+}
+
+function drawEquityChart(strategyCurve, buyHoldCurve){
+  const canvas = document.getElementById("equityChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height, pad = 12;
+  ctx.clearRect(0,0,w,h);
+
+  const all = [...strategyCurve, ...buyHoldCurve];
+  const min = Math.min(...all), max = Math.max(...all);
+  const range = (max - min) || 1;
+
+  ctx.strokeStyle = "#1b2130"; ctx.lineWidth = 1;
+  for (let i=0;i<=4;i++){
+    const y = pad + (h-2*pad)*i/4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+
+  const drawLine = (curve, color) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    curve.forEach((v,i) => {
+      const x = pad + (w-2*pad) * (i/(curve.length-1));
+      const y = h - pad - ((v-min)/range)*(h-2*pad);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  };
+  drawLine(buyHoldCurve, "#6b7488");
+  drawLine(strategyCurve, "#e0a63a");
+}
+
+// ---------- research lab view ----------
+async function loadResearch(){
+  try {
+    const res = await fetch("/api/research/stats");
+    const data = await res.json();
+    renderResearch(data);
+  } catch(e){ /* leave stale view in place */ }
+}
+
+function renderResearch(data){
+  const h = data.returns_histogram;
+  document.getElementById("rsMean").textContent = h.mean !== undefined ? h.mean : "—";
+  document.getElementById("rsStd").textContent = h.stdev !== undefined ? h.stdev : "—";
+  document.getElementById("rsSkew").textContent = h.skew_hint || "—";
+  document.getElementById("rsSample").textContent = data.sample_size;
+
+  drawHistogram(h);
+  drawAcf(data.autocorrelation);
+
+  const sc = data.stability_check;
+  document.getElementById("stabilityVerdict").textContent = sc.verdict === "insufficient data" ? "Not enough data yet" : sc.verdict;
+  if (sc.variance_ratio !== undefined && sc.variance_ratio !== null){
+    document.getElementById("stabilityDetail").innerHTML =
+      `variance ratio ${sc.variance_ratio}x &nbsp;·&nbsp; first-half mean ${sc.first_half_mean} &nbsp;·&nbsp; second-half mean ${sc.second_half_mean}`;
+  } else {
+    document.getElementById("stabilityDetail").textContent = "Let the market run longer for a meaningful comparison.";
+  }
+}
+
+function drawHistogram(h){
+  const canvas = document.getElementById("histChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, hgt = canvas.height, pad = 10;
+  ctx.clearRect(0,0,w,hgt);
+  if (!h.counts || h.counts.length === 0) return;
+  const maxCount = Math.max(...h.counts, 1);
+  const barW = (w - 2*pad) / h.counts.length;
+  h.counts.forEach((c,i) => {
+    const bh = (c/maxCount) * (hgt - 2*pad);
+    const edge = h.bin_edges[i];
+    ctx.fillStyle = edge < 0 ? "rgba(229,72,77,0.55)" : "rgba(47,191,113,0.55)";
+    ctx.fillRect(pad + i*barW, hgt - pad - bh, Math.max(1, barW-1), bh);
+  });
+}
+
+function drawAcf(acf){
+  const canvas = document.getElementById("acfChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, hgt = canvas.height, pad = 20;
+  ctx.clearRect(0,0,w,hgt);
+  if (!acf || acf.length === 0) return;
+  const mid = hgt/2;
+  ctx.strokeStyle = "#1b2130"; ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(w,mid); ctx.stroke();
+  const maxAbs = Math.max(...acf.map(a => Math.abs(a.autocorrelation)), 0.1);
+  const barW = (w - 2*pad) / acf.length;
+  acf.forEach((a,i) => {
+    const bh = (Math.abs(a.autocorrelation)/maxAbs) * (mid - pad/2);
+    const x = pad + i*barW;
+    ctx.fillStyle = a.autocorrelation >= 0 ? "rgba(47,191,113,0.65)" : "rgba(229,72,77,0.65)";
+    if (a.autocorrelation >= 0) ctx.fillRect(x, mid - bh, Math.max(2,barW-6), bh);
+    else ctx.fillRect(x, mid, Math.max(2,barW-6), bh);
+    ctx.fillStyle = "#6b7488"; ctx.font = "9px monospace";
+    ctx.fillText("lag " + a.lag, x, hgt - 4);
+  });
+}
+
+document.getElementById("refreshResearch").addEventListener("click", loadResearch);
+
+connect();
+</script>
+</body>
+</html>
