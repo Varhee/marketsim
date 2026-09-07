@@ -197,13 +197,4 @@ noise.
   at that price level - a reasonable simplification for a toy engine,
   not how a real venue implements STP.
 
-## What's not built (on purpose)
 
-The original brief for this had evolutionary trading agents and
-cointegration/pair analysis across multiple assets. Neither is here.
-Pair analysis specifically needs a second, correlated instrument -
-bolting that on properly means extending the simulation to run
-multiple symbols, which is a bigger change than it sounds and would
-mean shipping something half-finished. If you want to keep going,
-that's probably the single highest-value next addition, since
-Research Lab is already built to receive it.
